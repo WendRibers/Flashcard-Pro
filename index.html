@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flashcards Pro</title>
     
-    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="[https://unpkg.com/xlsx/dist/xlsx.full.min.js](https://unpkg.com/xlsx/dist/xlsx.full.min.js)"></script>
+    <script src="[https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js](https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js)"></script>
+    <script src="[https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js](https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js)"></script>
+    <script src="[https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js](https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js)"></script>
+    <link href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css)" rel="stylesheet">
+    <script src="[https://cdn.jsdelivr.net/npm/chart.js](https://cdn.jsdelivr.net/npm/chart.js)"></script>
 
     <style>
         :root {
@@ -84,7 +84,6 @@
         .card-text b { color: var(--primary); } .card-text i { color: var(--secondary); } .card-text mark { background-color: #fef08a; color: #1f2937; padding: 2px 6px; border-radius: 4px; }
         .badge-tipo { background: var(--accent); color: white; font-size: 0.7rem; padding: 3px 8px; border-radius: 10px; position: absolute; top: 15px; right: 20px; font-weight: bold; }
 
-        /* Lista de Gerenciamento */
         .list-item { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; gap: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);}
         .list-item-content { flex: 1; overflow: hidden; }
         .list-item-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.9rem; margin-bottom: 4px;}
@@ -103,6 +102,9 @@
     </style>
 </head>
 <body>
+    
+    <!-- Aviso de erro caso algo dê errado no Javascript -->
+    <div id="debug-error" style="color: red; padding: 20px; font-weight: bold; display: none;"></div>
 
     <div class="watermark">by Wenderson Ribeiro</div>
 
@@ -119,7 +121,6 @@
 
     <div class="container">
         
-        <!-- HOME -->
         <div id="view-home" class="view active">
             <div class="dashboard">
                 <div class="stat-card">
@@ -135,13 +136,13 @@
             <div class="charts-container">
                 <div class="chart-box">
                     <h4>Desempenho Semanal</h4>
-                    <div class="chart-wrapper" style="height: 200px;">
+                    <div class="chart-wrapper" style="height: 200px; display: flex; align-items: center; justify-content: center;" id="chartSemanaContainer">
                         <canvas id="chartSemana"></canvas>
                     </div>
                 </div>
                 <div class="chart-box">
                     <h4>Distribuição de Cards</h4>
-                    <div class="chart-wrapper" style="height: 200px;">
+                    <div class="chart-wrapper" style="height: 200px; display: flex; align-items: center; justify-content: center;" id="chartPastasContainer">
                         <canvas id="chartPastas"></canvas>
                     </div>
                 </div>
@@ -154,7 +155,6 @@
             <div class="folder-grid" id="folder-grid"></div>
         </div>
 
-        <!-- FOLDER -->
         <div id="view-folder" class="view">
             <h2 id="folder-title">Nome da Pasta</h2>
             <p style="color: var(--text-light); margin-top:-10px; margin-bottom: 20px;">Total: <strong id="folder-count">0</strong> | Revisar Hoje: <strong id="folder-due" style="color: var(--danger);">0</strong></p>
@@ -168,14 +168,12 @@
             </div>
         </div>
 
-        <!-- GERENCIADOR DE CARDS -->
         <div id="view-gerenciar" class="view">
             <h2 style="margin-top: 0;"><i class="fas fa-list"></i> Gerenciador de Cards</h2>
             <p style="color: var(--text-light); margin-top:-10px; margin-bottom: 20px;">Pasta: <strong id="gerenciar-folder-name"></strong></p>
             <div id="lista-cards-container"></div>
         </div>
 
-        <!-- STUDY -->
         <div id="view-study" class="view">
             <div class="study-container">
                 <div style="width: 100%; max-width: 500px; display: flex; justify-content: space-between; align-items: center; position: relative;">
@@ -243,7 +241,6 @@
         <div class="modal" style="max-height: 90vh; overflow-y: auto;">
             <h3 style="margin-top:0;" id="titulo-modal-card">Novo Card</h3>
             <input type="hidden" id="manual-card-id">
-            
             <div class="input-group">
                 <label>Tipo do Card:</label>
                 <select id="manual-tipo" onchange="atualizarDicasTipo()">
@@ -275,27 +272,59 @@
     <div id="loading-overlay"><div class="spinner"></div><h3 id="loading-text">Processando...</h3></div>
 
     <script>
-        // CORE & DADOS
+        // Rastreador de erros visível na tela
+        window.onerror = function(msg, url, line) {
+            let log = document.getElementById('debug-error');
+            log.style.display = 'block';
+            log.innerHTML += "Erro técnico (Linha " + line + "): " + msg + "<br>";
+        };
+
         let appData = { stats: { streak: 0, lastDate: "", cardsToday: 0, history: {} }, folders: { "Técnica Operatória": [], "POCUS": [], "Fisiologia": [] } };
         let chartSemana = null; let chartPastas = null;
 
         function carregarDados() {
-            const dataSalva = localStorage.getItem('flashcards_data');
-            if(dataSalva) appData = JSON.parse(dataSalva);
-            if(!appData.stats.history) appData.stats.history = {};
+            try {
+                const dataSalva = localStorage.getItem('flashcards_data');
+                if(dataSalva) {
+                    let parsedData = JSON.parse(dataSalva);
+                    if (!parsedData.folders && !parsedData.stats) {
+                        appData.folders = parsedData; 
+                    } else {
+                        appData = parsedData; 
+                    }
+                }
+                
+                if(!appData.stats) appData.stats = { streak: 0, lastDate: "", cardsToday: 0, history: {} };
+                if(!appData.stats.history) appData.stats.history = {};
+                if(!appData.folders) appData.folders = { "Técnica Operatória": [] };
 
-            const hoje = new Date().toLocaleDateString('pt-BR');
-            if(appData.stats.lastDate !== hoje) {
-                let ontem = new Date(); ontem.setDate(ontem.getDate() - 1);
-                if(appData.stats.lastDate !== ontem.toLocaleDateString('pt-BR') && appData.stats.lastDate !== "") appData.stats.streak = 0;
-                appData.stats.cardsToday = 0; appData.stats.lastDate = hoje; salvarDadosLocal();
-            }
-            if(localStorage.getItem('dark_mode') === 'true') { document.body.classList.add('dark-mode'); document.getElementById('theme-toggle').classList.replace('fa-moon', 'fa-sun'); }
-            Chart.defaults.color = localStorage.getItem('dark_mode') === 'true' ? '#94a3b8' : '#64748b';
+                const hoje = new Date().toLocaleDateString('pt-BR');
+                if(appData.stats.lastDate !== hoje) {
+                    let ontem = new Date(); ontem.setDate(ontem.getDate() - 1);
+                    if(appData.stats.lastDate !== ontem.toLocaleDateString('pt-BR') && appData.stats.lastDate !== "") appData.stats.streak = 0;
+                    appData.stats.cardsToday = 0; appData.stats.lastDate = hoje; salvarDadosLocal();
+                }
+                
+                if(localStorage.getItem('dark_mode') === 'true') { 
+                    document.body.classList.add('dark-mode'); 
+                    document.getElementById('theme-toggle').classList.replace('fa-moon', 'fa-sun'); 
+                }
+                
+                if (typeof Chart !== 'undefined') {
+                    Chart.defaults.color = localStorage.getItem('dark_mode') === 'true' ? '#94a3b8' : '#64748b';
+                }
+            } catch(e) { console.error(e); }
         }
+
         function salvarDadosLocal() { localStorage.setItem('flashcards_data', JSON.stringify(appData)); atualizarDashboard(); }
         function exportarBackup() { let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData)); let a = document.createElement('a'); a.href = dataStr; a.download = "backup_flashcards_wenderson.json"; a.click(); }
-        function toggleTheme() { const isD = document.body.classList.toggle('dark-mode'); localStorage.setItem('dark_mode', isD); document.getElementById('theme-toggle').className = isD ? "fas fa-sun" : "fas fa-moon"; Chart.defaults.color = isD ? '#94a3b8' : '#64748b'; renderizarGraficos(); }
+        
+        function toggleTheme() { 
+            const isD = document.body.classList.toggle('dark-mode'); 
+            localStorage.setItem('dark_mode', isD); 
+            document.getElementById('theme-toggle').className = isD ? "fas fa-sun" : "fas fa-moon"; 
+            if (typeof Chart !== 'undefined') { Chart.defaults.color = isD ? '#94a3b8' : '#64748b'; renderizarGraficos(); }
+        }
 
         let pastaAtiva = null; let filaEstudo = []; let cardAtualIndex = 0; let historicoSessao = []; let pastaAlvoOpcoes = null; let acaoPastaMode = 'nova';
 
@@ -304,7 +333,11 @@
         function mostrarView(id) { 
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); document.getElementById(id).classList.add('active'); 
             document.getElementById('btn-voltar').style.display = id==='view-home' ? 'none' : 'block'; 
-            if(id==='view-home'){ document.getElementById('topbar-title').innerHTML='<i class="fas fa-brain"></i> Flashcards Pro'; atualizarDashboard(); renderizarPastas(); } 
+            if(id==='view-home'){ 
+                document.getElementById('topbar-title').innerHTML='<i class="fas fa-brain"></i> Flashcards Pro'; 
+                atualizarDashboard(); 
+                renderizarPastas(); 
+            } 
         }
         
         function voltarParaHome() { 
@@ -312,93 +345,69 @@
             else { mostrarView('view-home'); }
         }
 
-        // GRÁFICOS
         function atualizarDashboard() { document.getElementById('stat-streak').innerHTML = `${appData.stats.streak} <i class="fas fa-fire fire-icon"></i>`; document.getElementById('stat-today').innerText = appData.stats.cardsToday; renderizarGraficos(); }
+        
         function renderizarGraficos() {
-            let labelsSemana = []; let dadosSemana = []; for(let i=6; i>=0; i--) { let d = new Date(); d.setDate(d.getDate() - i); let dStr = d.toLocaleDateString('pt-BR'); labelsSemana.push(dStr.substring(0,5)); dadosSemana.push(appData.stats.history[dStr] || 0); }
-            if(chartSemana) chartSemana.destroy(); chartSemana = new Chart(document.getElementById('chartSemana').getContext('2d'), { type: 'bar', data: { labels: labelsSemana, datasets: [{ data: dadosSemana, backgroundColor: '#3b82f6', borderRadius: 4, barPercentage: 0.6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } } });
-            let labelsPastas = Object.keys(appData.folders); let dadosPastas = Object.values(appData.folders).map(f => f.length);
-            if(chartPastas) chartPastas.destroy(); chartPastas = new Chart(document.getElementById('chartPastas').getContext('2d'), { type: 'doughnut', data: { labels: labelsPastas, datasets: [{ data: dadosPastas, backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'], borderWidth: 2, borderColor: document.body.classList.contains('dark-mode') ? '#1e293b' : '#ffffff' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } }, cutout: '65%' } });
+            if (typeof Chart === 'undefined') {
+                document.getElementById('chartSemanaContainer').innerHTML = "<span style='color:var(--text-light);font-size:0.9rem;'><i class='fas fa-wifi'></i> Gráficos carregando...</span>";
+                document.getElementById('chartPastasContainer').innerHTML = "<span style='color:var(--text-light);font-size:0.9rem;'><i class='fas fa-wifi'></i> Gráficos carregando...</span>";
+                return;
+            }
+            try {
+                let labelsSemana = []; let dadosSemana = []; for(let i=6; i>=0; i--) { let d = new Date(); d.setDate(d.getDate() - i); let dStr = d.toLocaleDateString('pt-BR'); labelsSemana.push(dStr.substring(0,5)); dadosSemana.push(appData.stats.history[dStr] || 0); }
+                if(chartSemana) chartSemana.destroy(); chartSemana = new Chart(document.getElementById('chartSemana').getContext('2d'), { type: 'bar', data: { labels: labelsSemana, datasets: [{ data: dadosSemana, backgroundColor: '#3b82f6', borderRadius: 4, barPercentage: 0.6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } } });
+                
+                let labelsPastas = Object.keys(appData.folders); let dadosPastas = Object.values(appData.folders).map(f => f.length);
+                if(chartPastas) chartPastas.destroy(); chartPastas = new Chart(document.getElementById('chartPastas').getContext('2d'), { type: 'doughnut', data: { labels: labelsPastas, datasets: [{ data: dadosPastas, backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'], borderWidth: 2, borderColor: document.body.classList.contains('dark-mode') ? '#1e293b' : '#ffffff' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } }, cutout: '65%' } });
+            } catch(e) { console.error("Erro nos gráficos", e); }
         }
 
-        // --- SISTEMA DE LONG PRESS PARA PASTAS ---
         let pressTimer; let preventClick = false;
         function pointerDown(e, nome) { preventClick = false; pressTimer = setTimeout(() => { preventClick = true; pastaAlvoOpcoes = nome; document.getElementById('titulo-opcoes-pasta').innerText = `Pasta: ${nome}`; document.getElementById('modal-opcoes-pasta').style.display = 'flex'; }, 600); }
         function pointerUp() { clearTimeout(pressTimer); }
         function clickFolder(e, nome) { if(preventClick) { e.preventDefault(); return; } abrirPasta(nome); }
 
         function renderizarPastas() { 
-            const grid = document.getElementById('folder-grid'); grid.innerHTML = ''; 
-            for (let n in appData.folders) { 
-                let d = appData.folders[n].filter(c => c.nextReview <= Date.now() || !c.nextReview).length; 
-                grid.innerHTML += `<div class="folder-card" style="position:relative;" onpointerdown="pointerDown(event, '${n}')" onpointerup="pointerUp()" onpointerleave="pointerUp()" onclick="clickFolder(event, '${n}')">${d>0?`<div style="background:var(--danger); color:white; border-radius:50%; width:24px; height:24px; display:inline-flex; align-items:center; justify-content:center; position:absolute; top:-10px; right:-10px; font-size:0.8rem; font-weight:bold;">${d}</div>`:''} <i class="fas fa-folder-open"></i> <h3>${n}</h3> <p style="color:var(--text-light); margin:0;">${appData.folders[n].length} cards</p></div>`; 
-            } 
-            grid.innerHTML += `<div class="folder-card add-new" onclick="acaoPastaMode='nova'; document.getElementById('titulo-modal-pasta').innerText='Criar Pasta'; document.getElementById('input-nome-pasta').value=''; document.getElementById('modal-pasta').style.display='flex'"> <i class="fas fa-plus-circle" style="color:var(--text-light);"></i> <h3>Nova Pasta</h3> </div>`; 
+            try {
+                const grid = document.getElementById('folder-grid'); grid.innerHTML = ''; 
+                for (let n in appData.folders) { 
+                    let d = appData.folders[n].filter(c => c.nextReview <= Date.now() || !c.nextReview).length; 
+                    grid.innerHTML += `<div class="folder-card" style="position:relative;" onpointerdown="pointerDown(event, '${n}')" onpointerup="pointerUp()" onpointerleave="pointerUp()" onclick="clickFolder(event, '${n}')">${d>0?`<div style="background:var(--danger); color:white; border-radius:50%; width:24px; height:24px; display:inline-flex; align-items:center; justify-content:center; position:absolute; top:-10px; right:-10px; font-size:0.8rem; font-weight:bold;">${d}</div>`:''} <i class="fas fa-folder-open"></i> <h3>${n}</h3> <p style="color:var(--text-light); margin:0;">${appData.folders[n].length} cards</p></div>`; 
+                } 
+                grid.innerHTML += `<div class="folder-card add-new" onclick="acaoPastaMode='nova'; document.getElementById('titulo-modal-pasta').innerText='Criar Pasta'; document.getElementById('input-nome-pasta').value=''; document.getElementById('modal-pasta').style.display='flex'"> <i class="fas fa-plus-circle" style="color:var(--text-light);"></i> <h3>Nova Pasta</h3> </div>`; 
+            } catch(e) { console.error(e); }
         }
 
         function abrirPasta(n) { pastaAtiva = n; document.getElementById('topbar-title').innerHTML = `<i class="fas fa-folder-open"></i> ${n}`; document.getElementById('folder-title').innerText = n; document.getElementById('folder-count').innerText = appData.folders[n].length; document.getElementById('folder-due').innerText = appData.folders[n].filter(c => c.nextReview <= Date.now() || !c.nextReview).length; mostrarView('view-folder'); }
 
-        // --- EDIÇÃO E EXCLUSÃO DE PASTAS ---
         function abrirRenomearPasta() { fecharModal('modal-opcoes-pasta'); acaoPastaMode = 'renomear'; document.getElementById('titulo-modal-pasta').innerText = 'Renomear Pasta'; document.getElementById('input-nome-pasta').value = pastaAlvoOpcoes; document.getElementById('modal-pasta').style.display='flex'; }
         
         function salvarPastaAcao() {
             let n = document.getElementById('input-nome-pasta').value.trim();
             if(!n) return;
             if(acaoPastaMode === 'nova' && !appData.folders[n]) { appData.folders[n] = []; }
-            else if(acaoPastaMode === 'renomear' && n !== pastaAlvoOpcoes && !appData.folders[n]) {
-                appData.folders[n] = appData.folders[pastaAlvoOpcoes];
-                delete appData.folders[pastaAlvoOpcoes];
-            } else if(n !== pastaAlvoOpcoes) { return alert("Nome já existe."); }
+            else if(acaoPastaMode === 'renomear' && n !== pastaAlvoOpcoes && !appData.folders[n]) { appData.folders[n] = appData.folders[pastaAlvoOpcoes]; delete appData.folders[pastaAlvoOpcoes]; } else if(n !== pastaAlvoOpcoes) { return alert("Nome já existe."); }
             fecharModal('modal-pasta'); salvarDadosLocal(); renderizarPastas();
         }
 
-        function confirmarExcluirPasta() {
-            if(confirm(`Tem certeza que deseja apagar a pasta "${pastaAlvoOpcoes}" e todos os seus cards?`)) {
-                delete appData.folders[pastaAlvoOpcoes]; fecharModal('modal-opcoes-pasta'); salvarDadosLocal(); renderizarPastas();
-            }
-        }
+        function confirmarExcluirPasta() { if(confirm(`Tem certeza que deseja apagar a pasta "${pastaAlvoOpcoes}"?`)) { delete appData.folders[pastaAlvoOpcoes]; fecharModal('modal-opcoes-pasta'); salvarDadosLocal(); renderizarPastas(); } }
 
-        // --- GERENCIADOR DE CARDS ---
-        function abrirGerenciador() {
-            document.getElementById('gerenciar-folder-name').innerText = pastaAtiva;
-            renderizarListaCards();
-            mostrarView('view-gerenciar');
-        }
+        function abrirGerenciador() { document.getElementById('gerenciar-folder-name').innerText = pastaAtiva; renderizarListaCards(); mostrarView('view-gerenciar'); }
 
         function renderizarListaCards() {
             const list = document.getElementById('lista-cards-container'); list.innerHTML = '';
             const cards = appData.folders[pastaAtiva];
             if(cards.length === 0) { list.innerHTML = '<p style="text-align:center; color:var(--text-light);">Nenhum card nesta pasta.</p>'; return; }
-            
-            cards.forEach((c, index) => {
-                let fStr = c.frenteTxt.replace(/<[^>]*>?/gm, ''); // Tira html
-                let vStr = c.versoTxt.replace(/<[^>]*>?/gm, '');
-                fStr = fStr.length > 40 ? fStr.substring(0, 40) + "..." : fStr;
-                vStr = vStr.length > 40 ? vStr.substring(0, 40) + "..." : vStr;
-                
-                list.innerHTML += `
-                    <div class="list-item">
-                        <div class="list-item-content">
-                            <div class="list-item-text"><strong>Q:</strong> ${fStr || "[Imagem]"}</div>
-                            <div class="list-item-text"><strong>R:</strong> ${vStr || "[Imagem]"}</div>
-                        </div>
-                        <div class="list-item-actions">
-                            <button class="btn-icon" style="background:var(--primary);" onclick="abrirModalManual('${c.id}')"><i class="fas fa-pencil-alt"></i></button>
-                            <button class="btn-icon" style="background:var(--danger);" onclick="excluirCardDaLista('${c.id}')"><i class="fas fa-trash"></i></button>
-                        </div>
-                    </div>
-                `;
+            cards.forEach((c) => {
+                let fStr = c.frenteTxt ? c.frenteTxt.replace(/<[^>]*>?/gm, '') : ""; 
+                let vStr = c.versoTxt ? c.versoTxt.replace(/<[^>]*>?/gm, '') : "";
+                fStr = fStr.length > 40 ? fStr.substring(0, 40) + "..." : fStr; vStr = vStr.length > 40 ? vStr.substring(0, 40) + "..." : vStr;
+                list.innerHTML += `<div class="list-item"><div class="list-item-content"><div class="list-item-text"><strong>Q:</strong> ${fStr || "[Imagem]"}</div><div class="list-item-text"><strong>R:</strong> ${vStr || "[Imagem]"}</div></div><div class="list-item-actions"><button class="btn-icon" style="background:var(--primary);" onclick="abrirModalManual('${c.id}')"><i class="fas fa-pencil-alt"></i></button><button class="btn-icon" style="background:var(--danger);" onclick="excluirCardDaLista('${c.id}')"><i class="fas fa-trash"></i></button></div></div>`;
             });
         }
 
-        function excluirCardDaLista(id) {
-            if(confirm("Excluir este card?")) {
-                appData.folders[pastaAtiva] = appData.folders[pastaAtiva].filter(c => c.id.toString() !== id.toString());
-                salvarDadosLocal(); renderizarListaCards();
-            }
-        }
+        function excluirCardDaLista(id) { if(confirm("Excluir este card?")) { appData.folders[pastaAtiva] = appData.folders[pastaAtiva].filter(c => c.id.toString() !== id.toString()); salvarDadosLocal(); renderizarListaCards(); } }
 
-        // --- SISTEMA DE ESTUDO ---
         function iniciarEstudo() {
             const todos = appData.folders[pastaAtiva]; if(todos.length === 0) return alert("Pasta vazia.");
             filaEstudo = todos.filter(c => !c.nextReview || c.nextReview <= Date.now());
@@ -408,162 +417,53 @@
         }
 
         function prepararCardEstudo() {
-            document.getElementById('btn-desfazer').style.display = historicoSessao.length > 0 ? 'flex' : 'none';
-            document.getElementById('btn-editar-estudo').style.display = 'none'; // Esconde o editar até mostrar a resposta
-
+            document.getElementById('btn-desfazer').style.display = historicoSessao.length > 0 ? 'flex' : 'none'; document.getElementById('btn-editar-estudo').style.display = 'none';
             if(cardAtualIndex >= filaEstudo.length) { alert("Sessão finalizada!"); appData.stats.streak++; salvarDadosLocal(); voltarParaHome(); return; }
-            
-            const cardElement = document.getElementById('flashcard');
-            const cardData = filaEstudo[cardAtualIndex];
-            cardElement.classList.remove('is-flipped');
-            document.getElementById('btn-virar-principal').style.display = 'block'; document.getElementById('srs-controls').style.display = 'none';
-            
-            let ivl = cardData.interval || 1;
-            document.getElementById('lbl-hard').innerText = Math.max(1, Math.round(ivl * 1.2)) + 'd'; document.getElementById('lbl-good').innerText = Math.max(2, Math.round(ivl * 2.5)) + 'd'; document.getElementById('lbl-easy').innerText = Math.max(3, Math.round(ivl * 3.5)) + 'd';
-            
+            const cardElement = document.getElementById('flashcard'); const cardData = filaEstudo[cardAtualIndex];
+            cardElement.classList.remove('is-flipped'); document.getElementById('btn-virar-principal').style.display = 'block'; document.getElementById('srs-controls').style.display = 'none';
+            let ivl = cardData.interval || 1; document.getElementById('lbl-hard').innerText = Math.max(1, Math.round(ivl * 1.2)) + 'd'; document.getElementById('lbl-good').innerText = Math.max(2, Math.round(ivl * 2.5)) + 'd'; document.getElementById('lbl-easy').innerText = Math.max(3, Math.round(ivl * 3.5)) + 'd';
             setTimeout(() => {
-                let tipo = cardData.tipo || 'padrao'; let frenteRender = cardData.frenteTxt; let versoRender = cardData.versoTxt;
+                let tipo = cardData.tipo || 'padrao'; let frenteRender = cardData.frenteTxt || ""; let versoRender = cardData.versoTxt || "";
                 document.getElementById('badge-front').style.display = 'none'; document.getElementById('badge-back').style.display = 'none';
-
-                if(tipo === 'cloze') {
-                    document.getElementById('badge-front').style.display = 'block'; document.getElementById('badge-front').innerText = 'Complete a Lacuna';
-                    frenteRender = cardData.frenteTxt.replace(/\{\{(.*?)\}\}/g, '[...]'); versoRender = cardData.frenteTxt.replace(/\{\{(.*?)\}\}/g, '<mark>$1</mark>') + (cardData.versoTxt ? '<br><br><i>' + cardData.versoTxt + '</i>' : '');
-                } else if(tipo === 'vf') { document.getElementById('badge-front').style.display = 'block'; document.getElementById('badge-front').innerText = 'Verdadeiro ou Falso?'; }
-
-                document.getElementById('front-text').innerHTML = formatarRichText(frenteRender);
-                if(cardData.frenteImg) { document.getElementById('front-img').src = cardData.frenteImg; document.getElementById('front-img').style.display = 'block'; } else document.getElementById('front-img').style.display = 'none';
-                
-                document.getElementById('back-text').innerHTML = formatarRichText(versoRender);
-                if(cardData.versoImg) { document.getElementById('back-img').src = cardData.versoImg; document.getElementById('back-img').style.display = 'block'; } else document.getElementById('back-img').style.display = 'none';
-                
+                if(tipo === 'cloze') { document.getElementById('badge-front').style.display = 'block'; document.getElementById('badge-front').innerText = 'Complete a Lacuna'; frenteRender = frenteRender.replace(/\{\{(.*?)\}\}/g, '[...]'); versoRender = frenteRender.replace(/\{\{(.*?)\}\}/g, '<mark>$1</mark>') + (versoRender ? '<br><br><i>' + versoRender + '</i>' : ''); } else if(tipo === 'vf') { document.getElementById('badge-front').style.display = 'block'; document.getElementById('badge-front').innerText = 'Verdadeiro ou Falso?'; }
+                document.getElementById('front-text').innerHTML = formatarRichText(frenteRender); if(cardData.frenteImg) { document.getElementById('front-img').src = cardData.frenteImg; document.getElementById('front-img').style.display = 'block'; } else document.getElementById('front-img').style.display = 'none';
+                document.getElementById('back-text').innerHTML = formatarRichText(versoRender); if(cardData.versoImg) { document.getElementById('back-img').src = cardData.versoImg; document.getElementById('back-img').style.display = 'block'; } else document.getElementById('back-img').style.display = 'none';
                 document.getElementById('study-counter').innerText = `Restam: ${filaEstudo.length - cardAtualIndex} cards`;
             }, 150);
         }
 
-        function virarCard() { 
-            if(!document.getElementById('flashcard').classList.contains('is-flipped')) { 
-                document.getElementById('flashcard').classList.add('is-flipped'); 
-                document.getElementById('btn-virar-principal').style.display = 'none'; 
-                document.getElementById('srs-controls').style.display = 'flex'; 
-                
-                // Exibe o botão de editar apenas quando a resposta estiver visível
-                document.getElementById('btn-editar-estudo').style.display = 'flex';
-                document.getElementById('btn-desfazer').style.display = 'none'; // Esconde para não sobrepor
-            } 
-        }
+        function virarCard() { if(!document.getElementById('flashcard').classList.contains('is-flipped')) { document.getElementById('flashcard').classList.add('is-flipped'); document.getElementById('btn-virar-principal').style.display = 'none'; document.getElementById('srs-controls').style.display = 'flex'; document.getElementById('btn-editar-estudo').style.display = 'flex'; document.getElementById('btn-desfazer').style.display = 'none'; } }
 
         function avaliarCard(q) {
-            let cardData = filaEstudo[cardAtualIndex];
-            historicoSessao.push({ index: cardAtualIndex, oldInterval: cardData.interval, oldNextReview: cardData.nextReview });
-            if(!cardData.interval) cardData.interval = 1;
-            if(q === 0) { cardData.interval = 0; cardData.nextReview = Date.now(); } else { if(q === 1) cardData.interval = Math.max(1, cardData.interval * 1.2); else if(q === 2) cardData.interval = Math.max(2, cardData.interval * 2.5); else if(q === 3) cardData.interval = Math.max(3, cardData.interval * 3.5); cardData.nextReview = Date.now() + (cardData.interval * 86400000); }
-            
+            let cardData = filaEstudo[cardAtualIndex]; historicoSessao.push({ index: cardAtualIndex, oldInterval: cardData.interval, oldNextReview: cardData.nextReview });
+            if(!cardData.interval) cardData.interval = 1; if(q === 0) { cardData.interval = 0; cardData.nextReview = Date.now(); } else { if(q === 1) cardData.interval = Math.max(1, cardData.interval * 1.2); else if(q === 2) cardData.interval = Math.max(2, cardData.interval * 2.5); else if(q === 3) cardData.interval = Math.max(3, cardData.interval * 3.5); cardData.nextReview = Date.now() + (cardData.interval * 86400000); }
             appData.stats.cardsToday++; const hojeStr = new Date().toLocaleDateString('pt-BR'); appData.stats.history[hojeStr] = (appData.stats.history[hojeStr] || 0) + 1;
-            
-            // Atualiza o card na base de dados real
-            let idxBase = appData.folders[pastaAtiva].findIndex(c => c.id === cardData.id);
-            if(idxBase > -1) appData.folders[pastaAtiva][idxBase] = cardData;
-
+            let idxBase = appData.folders[pastaAtiva].findIndex(c => c.id === cardData.id); if(idxBase > -1) appData.folders[pastaAtiva][idxBase] = cardData;
             cardAtualIndex++; salvarDadosLocal(); prepararCardEstudo();
         }
 
-        function desfazerUltimoCard() {
-            if(historicoSessao.length === 0) return;
-            const ultimo = historicoSessao.pop();
-            let cardDesfeito = filaEstudo[ultimo.index];
-            cardDesfeito.interval = ultimo.oldInterval; cardDesfeito.nextReview = ultimo.oldNextReview;
-            cardAtualIndex = ultimo.index; appData.stats.cardsToday = Math.max(0, appData.stats.cardsToday - 1);
-            const hojeStr = new Date().toLocaleDateString('pt-BR'); appData.stats.history[hojeStr] = Math.max(0, (appData.stats.history[hojeStr] || 0) - 1);
-            salvarDadosLocal(); prepararCardEstudo();
+        function desfazerUltimoCard() { if(historicoSessao.length === 0) return; const ultimo = historicoSessao.pop(); let cardDesfeito = filaEstudo[ultimo.index]; cardDesfeito.interval = ultimo.oldInterval; cardDesfeito.nextReview = ultimo.oldNextReview; cardAtualIndex = ultimo.index; appData.stats.cardsToday = Math.max(0, appData.stats.cardsToday - 1); const hojeStr = new Date().toLocaleDateString('pt-BR'); appData.stats.history[hojeStr] = Math.max(0, (appData.stats.history[hojeStr] || 0) - 1); salvarDadosLocal(); prepararCardEstudo(); }
+
+        let tsX = 0; 
+        function inicializarEventosTouch() {
+            let area = document.getElementById('card-touch-area');
+            if(area) { area.addEventListener('touchstart', e => { tsX = e.changedTouches[0].screenX; }, {passive: true}); area.addEventListener('touchend', e => { let teX = e.changedTouches[0].screenX; if(document.getElementById('flashcard').classList.contains('is-flipped')){ if(teX < tsX - 50) avaliarCard(2); if(teX > tsX + 50) avaliarCard(0); } }, {passive: true}); }
         }
 
-        let tsX = 0; document.getElementById('card-touch-area').addEventListener('touchstart', e => { tsX = e.changedTouches[0].screenX; }, {passive: true});
-        document.getElementById('card-touch-area').addEventListener('touchend', e => { let teX = e.changedTouches[0].screenX; if(document.getElementById('flashcard').classList.contains('is-flipped')){ if(teX < tsX - 50) avaliarCard(2); if(teX > tsX + 50) avaliarCard(0); } }, {passive: true});
-
-        // --- CRIAÇÃO E EDIÇÃO DE CARDS ---
-        function editarCardEmEstudo() {
-            abrirModalManual(filaEstudo[cardAtualIndex].id);
-        }
-
-        function abrirModalManual(cardIdParaEditar = null) { 
-            fecharModal('modal-card'); 
-            
-            if(cardIdParaEditar) {
-                document.getElementById('titulo-modal-card').innerText = "Editar Card";
-                document.getElementById('manual-card-id').value = cardIdParaEditar;
-                let c = appData.folders[pastaAtiva].find(x => x.id.toString() === cardIdParaEditar.toString());
-                
-                document.getElementById('manual-tipo').value = c.tipo || 'padrao';
-                document.getElementById('manual-frente-txt').value = c.frenteTxt;
-                document.getElementById('manual-verso-txt').value = c.versoTxt;
-                
-                if(c.frenteImg) { document.getElementById('preview-frente').src = c.frenteImg; document.getElementById('preview-frente').style.display = 'block'; } else document.getElementById('preview-frente').style.display = 'none';
-                if(c.versoImg) { document.getElementById('preview-verso').src = c.versoImg; document.getElementById('preview-verso').style.display = 'block'; } else document.getElementById('preview-verso').style.display = 'none';
-            } else {
-                document.getElementById('titulo-modal-card').innerText = "Novo Card";
-                document.getElementById('manual-card-id').value = "";
-                document.getElementById('manual-tipo').value = 'padrao';
-                document.getElementById('manual-frente-txt').value = '';
-                document.getElementById('manual-verso-txt').value = '';
-                document.getElementById('preview-frente').style.display = 'none';
-                document.getElementById('preview-verso').style.display = 'none';
-            }
-
-            atualizarDicasTipo(); 
-            document.getElementById('modal-card').style.display = 'flex'; 
-        }
-
+        function editarCardEmEstudo() { abrirModalManual(filaEstudo[cardAtualIndex].id); }
+        function abrirModalManual(cardIdParaEditar = null) { fecharModal('modal-card'); if(cardIdParaEditar) { document.getElementById('titulo-modal-card').innerText = "Editar Card"; document.getElementById('manual-card-id').value = cardIdParaEditar; let c = appData.folders[pastaAtiva].find(x => x.id.toString() === cardIdParaEditar.toString()); document.getElementById('manual-tipo').value = c.tipo || 'padrao'; document.getElementById('manual-frente-txt').value = c.frenteTxt || ""; document.getElementById('manual-verso-txt').value = c.versoTxt || ""; if(c.frenteImg) { document.getElementById('preview-frente').src = c.frenteImg; document.getElementById('preview-frente').style.display = 'block'; } else document.getElementById('preview-frente').style.display = 'none'; if(c.versoImg) { document.getElementById('preview-verso').src = c.versoImg; document.getElementById('preview-verso').style.display = 'block'; } else document.getElementById('preview-verso').style.display = 'none'; } else { document.getElementById('titulo-modal-card').innerText = "Novo Card"; document.getElementById('manual-card-id').value = ""; document.getElementById('manual-tipo').value = 'padrao'; document.getElementById('manual-frente-txt').value = ''; document.getElementById('manual-verso-txt').value = ''; document.getElementById('preview-frente').style.display = 'none'; document.getElementById('preview-verso').style.display = 'none'; } atualizarDicasTipo(); document.getElementById('modal-card').style.display = 'flex'; }
         function fecharModal(id) { document.getElementById(id).style.display = 'none'; }
         function previewImage(i, p) { const f = i.files[0]; if(f){ const r = new FileReader(); r.onload = e => { const img = document.getElementById(p); img.src=e.target.result; img.style.display='block';}; r.readAsDataURL(f); } }
-        
         function atualizarDicasTipo() { let t = document.getElementById('manual-tipo').value; let dica = document.getElementById('dica-tipo'); let lblF = document.getElementById('lbl-frente'); let lblV = document.getElementById('lbl-verso'); if(t === 'cloze') { dica.innerText = "Dica: Envolva a palavra a ser ocultada em chaves, ex: A {{Aorta}} é a maior artéria."; lblF.innerText = "Texto com lacuna:"; lblV.innerText = "Explicação Extra (Opcional):"; } else if(t === 'vf') { dica.innerText = "Dica: Escreva uma afirmação e no verso informe se é Verdadeira ou Falsa."; lblF.innerText = "Afirmação:"; lblV.innerText = "Resposta / Justificativa:"; } else { dica.innerText = ""; lblF.innerText = "Frente (Pergunta):"; lblV.innerText = "Verso (Resposta):"; } }
 
-        function salvarCardManual() { 
-            let t = document.getElementById('manual-tipo').value; 
-            let fTxt = document.getElementById('manual-frente-txt').value; let vTxt = document.getElementById('manual-verso-txt').value; 
-            let fImg = document.getElementById('preview-frente').style.display === 'block' ? document.getElementById('preview-frente').src : null; let vImg = document.getElementById('preview-verso').style.display === 'block' ? document.getElementById('preview-verso').src : null; 
-            
-            if(!fTxt && !fImg) return alert("A frente não pode ficar vazia!"); 
-            
-            let idEditando = document.getElementById('manual-card-id').value;
-            
-            if(idEditando) {
-                // Modo Edição
-                let idxBase = appData.folders[pastaAtiva].findIndex(x => x.id.toString() === idEditando);
-                if(idxBase > -1) {
-                    appData.folders[pastaAtiva][idxBase].tipo = t;
-                    appData.folders[pastaAtiva][idxBase].frenteTxt = fTxt;
-                    appData.folders[pastaAtiva][idxBase].versoTxt = vTxt;
-                    appData.folders[pastaAtiva][idxBase].frenteImg = fImg;
-                    appData.folders[pastaAtiva][idxBase].versoImg = vImg;
-                }
-                // Se estava estudando esse card agora, atualiza a fila também
-                if(document.getElementById('view-study').classList.contains('active')) {
-                    filaEstudo[cardAtualIndex].tipo = t;
-                    filaEstudo[cardAtualIndex].frenteTxt = fTxt;
-                    filaEstudo[cardAtualIndex].versoTxt = vTxt;
-                    filaEstudo[cardAtualIndex].frenteImg = fImg;
-                    filaEstudo[cardAtualIndex].versoImg = vImg;
-                    prepararCardEstudo(); // recarrega a tela
-                }
-            } else {
-                // Novo Card
-                appData.folders[pastaAtiva].push({ id: Date.now() + Math.random(), tipo: t, frenteTxt: fTxt, frenteImg: fImg, versoTxt: vTxt, versoImg: vImg, interval: 1, nextReview: 0 }); 
-            }
+        function salvarCardManual() { let t = document.getElementById('manual-tipo').value; let fTxt = document.getElementById('manual-frente-txt').value; let vTxt = document.getElementById('manual-verso-txt').value; let fImg = document.getElementById('preview-frente').style.display === 'block' ? document.getElementById('preview-frente').src : null; let vImg = document.getElementById('preview-verso').style.display === 'block' ? document.getElementById('preview-verso').src : null; if(!fTxt && !fImg) return alert("A frente não pode ficar vazia!"); let idEditando = document.getElementById('manual-card-id').value; if(idEditando) { let idxBase = appData.folders[pastaAtiva].findIndex(x => x.id.toString() === idEditando); if(idxBase > -1) { appData.folders[pastaAtiva][idxBase].tipo = t; appData.folders[pastaAtiva][idxBase].frenteTxt = fTxt; appData.folders[pastaAtiva][idxBase].versoTxt = vTxt; appData.folders[pastaAtiva][idxBase].frenteImg = fImg; appData.folders[pastaAtiva][idxBase].versoImg = vImg; } if(document.getElementById('view-study').classList.contains('active')) { filaEstudo[cardAtualIndex].tipo = t; filaEstudo[cardAtualIndex].frenteTxt = fTxt; filaEstudo[cardAtualIndex].versoTxt = vTxt; filaEstudo[cardAtualIndex].frenteImg = fImg; filaEstudo[cardAtualIndex].versoImg = vImg; prepararCardEstudo(); } } else { appData.folders[pastaAtiva].push({ id: Date.now() + Math.random(), tipo: t, frenteTxt: fTxt, frenteImg: fImg, versoTxt: vTxt, versoImg: vImg, interval: 1, nextReview: 0 }); } salvarDadosLocal(); fecharModal('modal-card'); if(document.getElementById('view-gerenciar').classList.contains('active')) renderizarListaCards(); if(!document.getElementById('view-study').classList.contains('active') && !document.getElementById('view-gerenciar').classList.contains('active')) abrirPasta(pastaAtiva); }
 
-            salvarDadosLocal(); fecharModal('modal-card'); 
-            
-            if(document.getElementById('view-gerenciar').classList.contains('active')) renderizarListaCards();
-            if(!document.getElementById('view-study').classList.contains('active') && !document.getElementById('view-gerenciar').classList.contains('active')) abrirPasta(pastaAtiva); 
-        }
-
-        // MÚLTIPLOS ARQUIVOS
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
         function textoParaCards(txt) { let lns = txt.split('\n'); let cont=0; for(let ln of lns){ ln=ln.trim(); let pts=null; if(ln.includes(' - ')) pts=ln.split(' - '); else if(ln.includes(':')) pts=ln.split(':'); if(pts && pts.length>1){ appData.folders[pastaAtiva].push({id: Date.now()+Math.random(), tipo:'padrao', frenteTxt: pts[0].trim(), frenteImg: null, versoTxt: pts.slice(1).join(' ').trim(), versoImg: null, interval:1, nextReview:0}); cont++; } } return cont; }
         
         async function processarMultiplosArquivos(event) {
-            const files = event.target.files; if (!files || files.length === 0) return;
-            document.getElementById('loading-overlay').style.display = 'flex'; let totalCardsLidos = 0;
+            if(typeof XLSX === 'undefined' || typeof mammoth === 'undefined') { alert("Conecte-se à internet para importar pela primeira vez!"); return; }
+            const files = event.target.files; if (!files || files.length === 0) return; document.getElementById('loading-overlay').style.display = 'flex'; let totalCardsLidos = 0;
+            if(typeof pdfjsLib !== 'undefined') pdfjsLib.GlobalWorkerOptions.workerSrc = '[https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js](https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js)';
             for(let i = 0; i < files.length; i++) {
                 const f = files[i]; const ext = f.name.split('.').pop().toLowerCase();
                 document.getElementById('loading-text').innerText = `Processando arquivo ${i + 1} de ${files.length}...`;
@@ -571,11 +471,14 @@
                     if(['xlsx','xls'].includes(ext)) { const data = await f.arrayBuffer(); const sheet = XLSX.read(data, {type: 'array'}).Sheets[XLSX.read(data, {type: 'array'}).SheetNames[0]]; for(let r of XLSX.utils.sheet_to_json(sheet, {header: 1})) { if(r[0] && r[1]) { appData.folders[pastaAtiva].push({id: Date.now()+Math.random(), tipo:'padrao', frenteTxt: r[0], frenteImg: null, versoTxt: r[1], versoImg: null, interval:1, nextReview:0}); totalCardsLidos++; } } } else if(ext === 'docx') { const r = await mammoth.extractRawText({arrayBuffer: await f.arrayBuffer()}); totalCardsLidos += textoParaCards(r.value); } else if(ext === 'pdf') { const pdf = await pdfjsLib.getDocument({data: await f.arrayBuffer()}).promise; let txt=""; for(let p=1; p<=pdf.numPages; p++){ txt += (await (await pdf.getPage(p)).getTextContent()).items.map(t=>t.str).join(" ") + "\n"; } totalCardsLidos += textoParaCards(txt); } else if(['png','jpg','jpeg'].includes(ext)) { const w = await Tesseract.createWorker('por'); const ret = await w.recognize(f); await w.terminate(); totalCardsLidos += textoParaCards(ret.data.text); }
                 } catch(err) { alert(`Erro ao ler o arquivo ${f.name}: ` + err); }
             }
-            event.target.value = ''; document.getElementById('loading-overlay').style.display = 'none'; salvarDadosLocal(); abrirPasta(pastaAtiva);
-            alert(`Processamento Concluído!\n${totalCardsLidos} novos cards foram adicionados de ${files.length} arquivo(s).`);
+            event.target.value = ''; document.getElementById('loading-overlay').style.display = 'none'; salvarDadosLocal(); abrirPasta(pastaAtiva); alert(`Concluído! ${totalCardsLidos} novos cards.`);
         }
 
-        carregarDados(); mostrarView('view-home');
+        window.addEventListener('load', () => {
+            carregarDados();
+            inicializarEventosTouch();
+            mostrarView('view-home');
+        });
     </script>
 </body>
-</html>"""
+</html>
